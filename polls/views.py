@@ -5,6 +5,8 @@ from django.shortcuts import render, get_object_or_404
 from polls.models import Question, Choice
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from  django import forms
+from django.utils import timezone
 
 def index(request):
     latest_question_list = Question.objects.all().order_by('-pub_date')[:5]
@@ -29,3 +31,34 @@ def vote(request, question_id):
 def results(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     return render(request, 'polls/results.html', {'question': question})
+
+
+#Form
+class QuestionForm(forms.Form):
+    question_text = forms.CharField(label = 'Question_text', max_length=200)
+    #pub_date = forms.DateTimeField('date published')
+
+def get_question(request):
+    if request.method == 'POST':
+        form = QuestionForm(request.POST)
+        if form.is_valid():
+            new_question_text = form.cleaned_data['question_text']
+            new_pub_date = timezone.now()
+            #new question 정의
+            new_Question = Question(question_text = new_question_text, pub_date = new_pub_date)
+            new_Question.save()
+
+            #redirect
+            latest_question_list = Question.objects.all().order_by('-pub_date')[:5]
+            context = {'latest_question_list': latest_question_list}
+            return render(request, 'polls/index.html', context)
+        else:
+            latest_question_list = Question.objects.all().order_by('-pub_date')[:5]
+            context = {'latest_question_list': latest_question_list}
+            return render(request, 'polls/index.html', context)
+    else:
+        latest_question_list = Question.objects.all().order_by('-pub_date')[:5]
+        context = {'latest_question_list': latest_question_list}
+    return render(request, 'polls/index.html', context)
+
+
